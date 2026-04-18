@@ -1,77 +1,56 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { Post } from './interfaces/post.interface';
+import { Post } from './entities/post.entity';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { CreatePostDto } from './dtos/create-post.dto';
+import { UpdatePostDto } from './dtos/update-post.dto';
 
 @Injectable()
 export class PostsService {
-  private posts: Post[] = [
-    {
-      id: 1,
-      title: 'First',
-      content: 'FirstPost',
-      authorName: 'authro1',
-      createdAt: new Date(),
-    },
-  ];
+  constructor(
+    @InjectRepository(Post) private postsRepository: Repository<Post>,
+  ) {}
 
-  private getNextId() {
-    return this.posts.length > 0
-      ? Math.max(...this.posts.map((post) => post.id)) + 1
-      : 1;
+  async findAll(): Promise<Post[]> {
+    const posts = await this.postsRepository.find();
+    return posts;
   }
 
-  findAll(): Post[] {
-    return this.posts;
-  }
-
-  findOne(id: number): Post {
-    const post = this.posts.find((post) => post.id === id);
+  async findOne(id: number): Promise<Post> {
+    const post = await this.postsRepository.findOneBy({ id });
 
     if (!post) throw new NotFoundException(`post with id ${id} not found`);
 
     return post;
   }
 
-  create(createPostdata: Omit<Post, 'id' | 'createdAt'>): Post {
-    console.log(this.getNextId());
-    const newPost: Post = {
-      ...createPostdata,
-      id: this.getNextId(),
-      createdAt: new Date(),
-    };
-    this.posts.push(newPost);
-    return newPost;
+  async create(createPostdata: CreatePostDto): Promise<Post> {
+    const newPost = this.postsRepository.create({
+      title: createPostdata.title,
+      content: createPostdata.content,
+      authorName: createPostdata.authorName,
+    });
+
+    return this.postsRepository.save(newPost);
   }
 
-  update(
-    id: number,
-    updatePostData: Partial<Omit<Post, 'id' | 'createdAt'>>,
-  ): Post {
-    const currentPostIndexToEdit = this.posts.findIndex(
-      (post) => post.id === id,
-    );
-
-    if (currentPostIndexToEdit === -1) {
-      throw new NotFoundException(`post with id ${id} not found`);
+  async update(id: number, updatePostData: UpdatePostDto): Promise<Post> {
+    const findPostToUpdate = await this.findOne(id);
+    if (updatePostData.title) {
+      findPostToUpdate.title = updatePostData.title;
     }
-
-    this.posts[currentPostIndexToEdit] = {
-      ...this.posts[currentPostIndexToEdit],
-      ...updatePostData,
-      updatedAt: new Date(),
-    };
-
-    return this.posts[currentPostIndexToEdit];
+    if (updatePostData.content) {
+      findPostToUpdate.content = updatePostData.content;
+    }
+    if (updatePostData.authorName) {
+      findPostToUpdate.authorName = updatePostData.authorName;
+    }
+    return this.postsRepository.save(findPostToUpdate);
   }
 
-  remove(id: number): { message: string } {
-    const cuurentPostIndex = this.posts.findIndex((post) => post.id === id);
+  async remove(id: number) {
+    const findPostTodelete = await this.findOne(id);
 
-    if (cuurentPostIndex === -1) {
-      throw new NotFoundException(`Post with Id ${id} not found`);
-    }
-
-    this.posts.splice(cuurentPostIndex, 1);
-
-    return { message: `Post with id ${id} has been deleted` };
+    await this.postsRepository.remove(findPostTodelete);
   }
 }
