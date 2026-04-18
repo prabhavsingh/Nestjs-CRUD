@@ -8,7 +8,7 @@ export class PostsService {
       id: 1,
       title: 'First',
       content: 'FirstPost',
-      authorname: 'authro1',
+      authorName: 'authro1',
       createdAt: new Date(),
     },
   ];

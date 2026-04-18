@@ -2,7 +2,7 @@ export interface Post {
   id: number;
   title: string;
   content: string;
-  authorname: string;
+  authorName: string;
   createdAt: Date;
   updatedAt?: Date;
 }
