@@ -9,36 +9,28 @@ import {
   ParseIntPipe,
   Post,
   Put,
-  Query,
   UsePipes,
   ValidationPipe,
 } from '@nestjs/common';
 import { PostsService } from './posts.service';
-import type { Post as PostInterface } from './interfaces/post.interface';
 import { CreatePostDto } from './dtos/create-post.dto';
 import { UpdatePostDto } from './dtos/update-post.dto';
 import { PostExistsPipe } from './pipes/post-exists.pipe';
+import { Post as PostEntity } from './entities/post.entity';
 
 @Controller('posts')
 export class PostsController {
   constructor(private readonly postService: PostsService) {}
 
   @Get()
-  findAll(@Query('search') search?: string): PostInterface[] {
-    const extractAllPosts = this.postService.findAll();
-
-    if (search) {
-      return extractAllPosts.filter((post) =>
-        post.title.toLowerCase().includes(search.toLowerCase()),
-      );
-    }
-    return extractAllPosts;
+  findAll(): Promise<PostEntity[]> {
+    return this.postService.findAll();
   }
 
   @Get(':id')
   findOne(
     @Param('id', ParseIntPipe, PostExistsPipe) id: number,
-  ): PostInterface {
+  ): Promise<PostEntity> {
     return this.postService.findOne(id);
   }
 
@@ -51,7 +43,7 @@ export class PostsController {
       forbidNonWhitelisted: true,
     }),
   )
-  creatPost(@Body() createPostData: CreatePostDto): PostInterface {
+  creatPost(@Body() createPostData: CreatePostDto): Promise<PostEntity> {
     return this.postService.create(createPostData);
   }
 
@@ -59,13 +51,15 @@ export class PostsController {
   updatePost(
     @Param('id', ParseIntPipe, PostExistsPipe) id: number,
     @Body() updatePostData: UpdatePostDto,
-  ): PostInterface {
+  ): Promise<PostEntity> {
     return this.postService.update(id, updatePostData);
   }
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  remove(@Param('id', ParseIntPipe, PostExistsPipe) id: number): void {
-    this.postService.remove(id);
+  async remove(
+    @Param('id', ParseIntPipe, PostExistsPipe) id: number,
+  ): Promise<void> {
+    await this.postService.remove(id);
   }
 }
