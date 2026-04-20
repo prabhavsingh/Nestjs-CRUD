@@ -9,6 +9,7 @@ import {
   ParseIntPipe,
   Post,
   Put,
+  Query,
   UseGuards,
   UsePipes,
   ValidationPipe,
@@ -23,14 +24,18 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { User, UserRole } from '../auth/entities/user-entity';
 import { RolesGuard } from '../auth/guards/roles-guard';
 import { Roles } from '../auth/decorators/role.decorator';
+import { FindPostsQueryDto } from './dtos/find-post-query.dto';
+import { PaginatedResponse } from '../common/interfaces/paginated-response.interfcae';
 
 @Controller('posts')
 export class PostsController {
   constructor(private readonly postService: PostsService) {}
 
   @Get()
-  findAll(): Promise<PostEntity[]> {
-    return this.postService.findAll();
+  findAll(
+    @Query() query: FindPostsQueryDto,
+  ): Promise<PaginatedResponse<PostEntity>> {
+    return this.postService.findAll(query);
   }
 
   @Get(':id')
