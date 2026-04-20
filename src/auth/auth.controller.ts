@@ -7,6 +7,8 @@ import { CurrentUser } from './decorators/current-user.decorator';
 import { User, UserRole } from './entities/user-entity';
 import { Roles } from './decorators/role.decorator';
 import { RolesGuard } from './guards/roles-guard';
+import { LoginThrottleGuard } from './guards/login-throttler.guard';
+import { Throttle } from '@nestjs/throttler';
 
 @Controller('auth')
 export class AuthController {
@@ -17,6 +19,8 @@ export class AuthController {
     return this.authService.register(registerDto);
   }
 
+  @UseGuards(LoginThrottleGuard)
+  @Throttle({ default: { limit: 3, ttl: 60000 } })
   @Post('login')
   login(@Body() loginDto: LoginDto) {
     return this.authService.login(loginDto);
