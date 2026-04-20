@@ -1,9 +1,15 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { Post } from './entities/post.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CreatePostDto } from './dtos/create-post.dto';
 import { UpdatePostDto } from './dtos/update-post.dto';
+import { User, UserRole } from '../auth/entities/user-entity';
+import { relative } from 'path';
 
 @Injectable()
 export class PostsService {
@@ -12,39 +18,53 @@ export class PostsService {
   ) {}
 
   async findAll(): Promise<Post[]> {
-    const posts = await this.postsRepository.find();
+    const posts = await this.postsRepository.find({
+      relations: ['authorName'],
+    });
     return posts;
   }
 
   async findOne(id: number): Promise<Post> {
-    const post = await this.postsRepository.findOneBy({ id });
+    const post = await this.postsRepository.findOne({
+      where: { id },
+      relations: ['authorName'],
+    });
 
     if (!post) throw new NotFoundException(`post with id ${id} not found`);
 
     return post;
   }
 
-  async create(createPostdata: CreatePostDto): Promise<Post> {
+  async create(createPostdata: CreatePostDto, authorName: User): Promise<Post> {
     const newPost = this.postsRepository.create({
       title: createPostdata.title,
       content: createPostdata.content,
-      authorName: createPostdata.authorName,
+      authorName,
     });
 
     return this.postsRepository.save(newPost);
   }
 
-  async update(id: number, updatePostData: UpdatePostDto): Promise<Post> {
+  async update(
+    id: number,
+    updatePostData: UpdatePostDto,
+    user: User,
+  ): Promise<Post> {
     const findPostToUpdate = await this.findOne(id);
+    if (
+      findPostToUpdate.authorName.id !== user.id &&
+      user.role !== UserRole.ADMIN
+    ) {
+      throw new ForbiddenException('You can only update your own post');
+    }
+
     if (updatePostData.title) {
       findPostToUpdate.title = updatePostData.title;
     }
     if (updatePostData.content) {
       findPostToUpdate.content = updatePostData.content;
     }
-    if (updatePostData.authorName) {
-      findPostToUpdate.authorName = updatePostData.authorName;
-    }
+
     return this.postsRepository.save(findPostToUpdate);
   }
 
