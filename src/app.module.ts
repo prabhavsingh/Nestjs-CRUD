@@ -8,9 +8,15 @@ import { AuthModule } from './auth/auth.module';
 import { User } from './auth/entities/user-entity';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { CacheModule } from '@nestjs/cache-manager';
+import { ConfigModule } from '@nestjs/config';
+import { FileUploadModule } from './file-upload/file-upload.module';
+import { File } from './file-upload/entities/file.entity';
 
 @Module({
   imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+    }),
     CacheModule.register({
       isGlobal: true,
       ttl: 10000,
@@ -31,11 +37,12 @@ import { CacheModule } from '@nestjs/cache-manager';
       username: 'admin',
       password: 'secret',
       database: 'nestjs-posts',
-      entities: [Post, User],
+      entities: [Post, User, File],
       synchronize: true, //dev mode
     }),
     PostsModule,
     AuthModule,
+    FileUploadModule,
   ],
   controllers: [AppController],
   providers: [AppService],
